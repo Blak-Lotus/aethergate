@@ -1,0 +1,16 @@
+{
+  "name": "aethergate",
+  "version": "1.0.0",
+  "scripts": {
+    "build:css": "sass src/css/style.scss public/css/style.css --style=compressed --no-source-map",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.5.0",
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "sass": "^1.77.0"
+  }
+}

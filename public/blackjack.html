@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blackjack — AetherGate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="game-page bj-page">
+
+  <header class="game-header">
+    <a href="index.html?arcade" class="back-link">← BACK TO ARCADE</a>
+    <span class="game-header-title" style="color:var(--gold)">♠ BLACKJACK</span>
+    <span class="header-right" id="hdr-round">ROUND 1</span>
+  </header>
+
+  <main class="game-main">
+    <div class="bj-layout">
+
+      <div class="bj-status">
+        <span class="bj-balance">💰 $<span id="balance">1000</span></span>
+        <span class="bj-msg" id="bj-msg">Place your bet to begin</span>
+        <span class="bj-round">Round <span id="round-num">1</span></span>
+      </div>
+
+      <div class="bj-table">
+        <!-- Dealer -->
+        <div class="hand-zone">
+          <div class="hand-label">DEALER</div>
+          <div class="cards-row" id="dealer-cards"></div>
+          <div class="hand-total" id="dealer-total">—</div>
+        </div>
+
+        <div style="border-top:1px dashed rgba(100,200,100,.12);margin:0 -5%;"></div>
+
+        <!-- Player -->
+        <div class="hand-zone">
+          <div class="cards-row" id="player-cards"></div>
+          <div class="hand-total" id="player-total">—</div>
+          <div class="hand-label">YOU</div>
+        </div>
+      </div>
+
+      <!-- Bet area -->
+      <div class="bet-area" id="bet-area">
+        <div class="bet-label">CURRENT BET</div>
+        <div class="bet-amount">$<span id="bet-display">0</span></div>
+        <div class="chip-btns">
+          <button class="chip-btn chip-5"   data-val="5">5</button>
+          <button class="chip-btn chip-10"  data-val="10">10</button>
+          <button class="chip-btn chip-25"  data-val="25">25</button>
+          <button class="chip-btn chip-50"  data-val="50">50</button>
+          <button class="chip-btn chip-100" data-val="100">100</button>
+          <button class="chip-btn chip-clr" data-val="clr">CLR</button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="action-btns">
+        <button class="action-btn btn-deal"   id="btn-deal"   disabled>DEAL</button>
+        <button class="action-btn btn-hit"    id="btn-hit"    disabled>HIT</button>
+        <button class="action-btn btn-stand"  id="btn-stand"  disabled>STAND</button>
+        <button class="action-btn btn-double" id="btn-double" disabled>DOUBLE DOWN</button>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="js/blackjackLogic.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    const BJ      = window.BlackjackLogic;
+    const SAVE_KEY = 'ag_bj_v2';
+
+    /* ── Persistent state ──────────────────────── */
+    let balance = 1000;
+    let round   = 1;
+    try {
+      const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+      if (typeof s.balance === 'number') balance = Math.max(0, s.balance);
+      if (typeof s.round   === 'number') round   = s.round;
+    } catch (e) {}
+
+    function persist() {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify({ balance, round })); } catch (e) {}
+    }
+
+    /* ── In-round state ────────────────────────── */
+    let game    = null;
+    let bet     = 0;
+    let phase   = 'betting';   // betting | playing | over
+
+    /* ── DOM ───────────────────────────────────── */
+    const balEl      = document.getElementById('balance');
+    const betDisp    = document.getElementById('bet-display');
+    const bjMsg      = document.getElementById('bj-msg');
+    const roundNumEl = document.getElementById('round-num');
+    const hdrRound   = document.getElementById('hdr-round');
+    const dealerEl   = document.getElementById('dealer-cards');
+    const playerEl   = document.getElementById('player-cards');
+    const dealerTot  = document.getElementById('dealer-total');
+    const playerTot  = document.getElementById('player-total');
+    const betArea    = document.getElementById('bet-area');
+    const btnDeal    = document.getElementById('btn-deal');
+    const btnHit     = document.getElementById('btn-hit');
+    const btnStand   = document.getElementById('btn-stand');
+    const btnDouble  = document.getElementById('btn-double');
+
+    /* ── Card element ──────────────────────────── */
+    function makeCard(card, faceDown) {
+      const el = document.createElement('div');
+      el.className = 'playing-card';
+      if (faceDown) {
+        el.classList.add('face-down');
+        el.textContent = '🂠';
+      } else {
+        if (BJ.isRed(card)) el.classList.add('red');
+        el.textContent = card.value + card.suit;
+      }
+      return el;
+    }
+
+    /* ── Render hands ───────────────────────────── */
+    function renderHands(hideDealerHole) {
+      dealerEl.innerHTML = '';
+      playerEl.innerHTML = '';
+
+      game.dealerHand.forEach((c, i) => {
+        dealerEl.appendChild(makeCard(c, hideDealerHole && i === 0));
+      });
+
+      const dv = hideDealerHole
+        ? BJ.calculateHand([game.dealerHand[1]])
+        : BJ.calculateHand(game.dealerHand);
+
+      dealerTot.textContent = hideDealerHole
+        ? (game.dealerHand[1] ? game.dealerHand[1].value + game.dealerHand[1].suit : '—')
+        : dv;
+      dealerTot.className = 'hand-total' +
+        (!hideDealerHole && dv > 21 ? ' bust' : !hideDealerHole && dv === 21 && game.dealerHand.length === 2 ? ' blackjack' : '');
+
+      game.playerHand.forEach(c => playerEl.appendChild(makeCard(c, false)));
+      const pv = BJ.calculateHand(game.playerHand);
+      playerTot.textContent = game.playerHand.length ? pv : '—';
+      playerTot.className   = 'hand-total' + (pv > 21 ? ' bust' : pv === 21 ? ' blackjack' : '');
+    }
+
+    /* ── Update UI controls ─────────────────────── */
+    function updateUI() {
+      balEl.textContent    = balance;
+      betDisp.textContent  = bet;
+      roundNumEl.textContent = round;
+      hdrRound.textContent   = 'ROUND ' + round;
+
+      const isBetting = phase === 'betting';
+      const isPlaying = phase === 'playing';
+
+      betArea.style.opacity       = isBetting ? '1' : '0.3';
+      betArea.style.pointerEvents = isBetting ? 'auto' : 'none';
+
+      btnDeal.disabled   = bet <= 0 || !isBetting;
+      btnHit.disabled    = !isPlaying;
+      btnStand.disabled  = !isPlaying;
+      btnDouble.disabled = !isPlaying || (game && game.playerHand.length > 2) || balance < bet;
+    }
+
+    function setMsg(msg, color) {
+      bjMsg.textContent = msg;
+      bjMsg.style.color = color || 'var(--white)';
+    }
+
+    /* ── Chips ─────────────────────────────────── */
+    document.querySelectorAll('.chip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (phase !== 'betting') return;
+        const val = btn.dataset.val;
+        if (val === 'clr') { bet = 0; setMsg('Bet cleared.', ''); updateUI(); return; }
+        const v = parseInt(val, 10);
+        if (bet + v > balance) { setMsg('Insufficient balance!', '#ff4444'); return; }
+        bet += v;
+        setMsg('Bet: $' + bet, 'var(--gold)');
+        updateUI();
+      });
+    });
+
+    /* ── Deal ────────────────────────────────────── */
+    btnDeal.addEventListener('click', () => {
+      if (phase !== 'betting' || bet <= 0) return;
+      balance -= bet;
+      persist();
+
+      game  = BJ.createNewGame();
+      phase = 'playing';
+
+      renderHands(true);
+      updateUI();
+
+      // Immediate blackjack check
+      if (BJ.isBlackjack(game.playerHand)) {
+        renderHands(false);
+        if (BJ.isBlackjack(game.dealerHand)) {
+          endRound('push', 'Both Blackjack — Push!');
+        } else {
+          endRound('blackjack', '🂡 BLACKJACK! You win 3:2!');
+        }
+        return;
+      }
+      setMsg('Hit, Stand, or Double Down?', '');
+    });
+
+    /* ── Hit ──────────────────────────────────────── */
+    btnHit.addEventListener('click', () => {
+      if (phase !== 'playing') return;
+      const res = BJ.processAction(game, 'hit');
+      renderHands(true);
+      if (res.outcome) {
+        renderHands(false);
+        endRound(res.outcome, res.message);
+      } else {
+        setMsg('Hit again or Stand?', '');
+      }
+      updateUI();
+    });
+
+    /* ── Stand ────────────────────────────────────── */
+    btnStand.addEventListener('click', () => {
+      if (phase !== 'playing') return;
+      const res = BJ.processAction(game, 'stand');
+      renderHands(false);
+      endRound(res.outcome, res.message);
+    });
+
+    /* ── Double down ──────────────────────────────── */
+    btnDouble.addEventListener('click', () => {
+      if (phase !== 'playing' || game.playerHand.length > 2) return;
+      balance -= bet;
+      bet     *= 2;
+      persist();
+      const res = BJ.processAction(game, 'double');
+      renderHands(false);
+      endRound(res.outcome, res.message);
+    });
+
+    /* ── End round ────────────────────────────────── */
+    function endRound(outcome, msg) {
+      phase = 'over';
+      round++;
+
+      let color = 'var(--white)';
+      if (outcome === 'win') {
+        balance += bet * 2;
+        color    = 'var(--gold)';
+      } else if (outcome === 'blackjack') {
+        balance += Math.floor(bet * 2.5);
+        color    = 'var(--gold)';
+      } else if (outcome === 'push') {
+        balance += bet;
+        color    = 'var(--cyan)';
+      }
+      // lose: nothing added back
+
+      persist();
+      setMsg(msg, color);
+
+      if (balance <= 0) {
+        balance = 1000;
+        persist();
+        setTimeout(() => setMsg('Out of chips — reloaded $1000 🎲', 'var(--magenta)'), 500);
+      }
+
+      // Auto-reset after 2.8 s
+      setTimeout(() => {
+        bet   = 0;
+        phase = 'betting';
+        game  = null;
+        dealerEl.innerHTML = '';
+        playerEl.innerHTML = '';
+        dealerTot.textContent = '—';
+        playerTot.textContent = '—';
+        dealerTot.className   = 'hand-total';
+        playerTot.className   = 'hand-total';
+        setMsg('Place your bet for round ' + round, '');
+        updateUI();
+      }, 2800);
+
+      updateUI();
+    }
+
+    /* ── Init ─────────────────────────────────────── */
+    updateUI();
+
+  }());
+  </script>
+</body>
+</html>

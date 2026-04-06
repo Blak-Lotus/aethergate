@@ -1,0 +1,162 @@
+// ============== AetherGate SCSS - Anime Neon Aesthetic ==============
+
+$neon-cyan: #22d3ee;
+$neon-purple: #a855f7;
+$neon-pink: #ec4899;
+$dark-bg: #0a0a0a;
+
+@mixin neon-glow($color) {
+  text-shadow: 
+    0 0 10px $color,
+    0 0 20px $color,
+    0 0 40px darken($color, 10%),
+    0 0 80px darken($color, 20%);
+}
+
+@mixin motion-blur {
+  filter: blur(1px) brightness(1.1);
+}
+
+body {
+  background: $dark-bg;
+  color: white;
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow: hidden;
+}
+
+// Cinematic Intro
+#intro-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4c1d95, #000, #164e63);
+  z-index: 50;
+
+  .door-container {
+    perspective: 1200px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .door {
+    position: absolute;
+    width: 50%;
+    height: 80%;
+    background: linear-gradient(to right, #1f2937, #111827);
+    border: 12px solid $neon-cyan;
+    box-shadow: 0 0 60px rgba(34, 211, 238, 0.6);
+    transition: transform 1.4s cubic-bezier(0.23, 1, 0.32, 1);
+    overflow: hidden;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      opacity: 0.3;
+    }
+  }
+
+  #door-left {
+    left: 50%;
+    transform-origin: right center;
+    border-right: none;
+  }
+
+  #door-right {
+    left: 50%;
+    transform-origin: left center;
+    border-left: none;
+  }
+
+  #light-bloom {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.9) 0%, transparent 70%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+}
+
+#press-any-key {
+  position: absolute;
+  bottom: 15%;
+  font-size: 4.5rem;
+  font-weight: 900;
+  letter-spacing: 0.6em;
+  text-transform: uppercase;
+  @include neon-glow($neon-cyan);
+  animation: pulse-neon 2s infinite alternate ease-in-out;
+}
+
+@keyframes pulse-neon {
+  from { opacity: 0.6; transform: scale(0.95); }
+  to   { opacity: 1;   transform: scale(1.05); }
+}
+
+// Fullscreen Carousel + Game Slides
+#carousel-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+// Neon Play Button (used on every slide)
+.play-btn {
+  @include neon-glow($neon-purple);
+  background: rgba(0, 0, 0, 0.7);
+  border: 4px solid $neon-cyan;
+  padding: 1.25rem 4rem;
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    background: $neon-cyan;
+    color: black;
+    transform: scale(1.08) translateY(-4px);
+    box-shadow: 0 0 80px $neon-cyan;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 40%;
+    height: 400%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.6), transparent);
+    transform: skewX(-25deg);
+    animation: shine 4s infinite;
+  }
+}
+
+@keyframes shine {
+  0%   { transform: translateX(-150%) skewX(-25deg); }
+  20%  { transform: translateX(300%) skewX(-25deg); }
+  100% { transform: translateX(300%) skewX(-25deg); }
+}
+
+// Unique slide themes (example)
+.slide-blackjack {
+  background: linear-gradient(rgba(0,0,0,0.75), rgba(153, 27, 27, 0.6)), url('https://picsum.photos/id/1015/1920/1080') center/cover;
+}
+
+.slide-gin {
+  background: linear-gradient(rgba(0,0,0,0.75), rgba(126, 34, 206, 0.6)), url('https://picsum.photos/id/201/1920/1080') center/cover;
+}
+
+.slide-clicker {
+  background: linear-gradient(rgba(0,0,0,0.75), rgba(234, 179, 8, 0.6)), url('https://picsum.photos/id/866/1920/1080') center/cover;
+}

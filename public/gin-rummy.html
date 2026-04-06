@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gin Rummy — AetherGate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="game-page gin-page">
+
+  <header class="game-header">
+    <a href="index.html?arcade" class="back-link">← BACK TO ARCADE</a>
+    <span class="game-header-title" style="color:var(--magenta)">♣ GIN RUMMY</span>
+    <span class="header-right" id="hdr-round">ROUND 1</span>
+  </header>
+
+  <!-- ═══ PRE-MENU OVERLAY ═══ -->
+  <div class="gin-premenu" id="gin-premenu">
+    <div class="gin-premenu-card">
+      <span class="pmenu-badge">♣ GIN RUMMY</span>
+      <h2 class="pmenu-title">CONFIGURE MATCH</h2>
+
+      <div>
+        <div class="pmenu-section-title">GAME MODES <span style="font-size:.8em;color:var(--dim);letter-spacing:.15em">(select any)</span></div>
+        <div class="pmenu-toggles">
+          <button class="mode-toggle" id="toggle-jokers" aria-pressed="false">
+            <span class="toggle-icon">★</span>
+            <span class="toggle-label">JOKERS</span>
+            <span class="toggle-sub">Wild cards added to deck</span>
+          </button>
+          <button class="mode-toggle" id="toggle-nopoints" aria-pressed="false">
+            <span class="toggle-icon">∅</span>
+            <span class="toggle-label">NO POINTS</span>
+            <span class="toggle-sub">Win 10 rounds instead</span>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div class="pmenu-section-title">OPPONENT</div>
+        <div class="pmenu-opponents">
+          <button class="opp-choice active" id="opp-ai">
+            <span class="opp-icon">🤖</span>
+            <span class="opp-label">VS AI</span>
+            <span class="opp-sub">Single-player</span>
+          </button>
+          <button class="opp-choice" id="opp-player">
+            <span class="opp-icon">👤</span>
+            <span class="opp-label">VS PLAYER</span>
+            <span class="opp-sub">Pass &amp; play</span>
+          </button>
+        </div>
+      </div>
+
+      <button class="pmenu-start" id="btn-start-match">START MATCH &nbsp;→</button>
+    </div>
+  </div>
+
+  <!-- ═══ PASS-DEVICE OVERLAY ═══ -->
+  <div class="pass-overlay hidden" id="pass-overlay">
+    <div class="pass-card">
+      <span class="pass-label">TURN END — PASS DEVICE</span>
+      <div class="pass-player-name" id="pass-name">PLAYER 2</div>
+      <div class="pass-instruction">Tap below to reveal your hand</div>
+      <button class="pass-reveal-btn" id="pass-reveal">REVEAL MY HAND</button>
+    </div>
+  </div>
+
+  <!-- ═══ GAME AREA ═══ -->
+  <main class="game-main">
+    <div class="gin-layout" id="gin-game" style="display:none">
+
+      <!-- Score / target bar -->
+      <div class="gin-scorebar">
+        <span class="score-you" id="score-you-label">YOU: <strong id="score-you">0</strong></span>
+        <span class="score-mid" id="score-mid-label">First to 100 pts</span>
+        <span class="score-ai"  id="score-ai-label">AI: <strong id="score-ai">0</strong></span>
+      </div>
+
+      <div class="gin-table">
+
+        <!-- ── OPPONENT AREA ── -->
+        <div class="gin-hand-wrap">
+          <div class="hand-title" id="opp-hand-title">AI HAND (<span id="ai-count">10</span>)</div>
+          <div class="cards-hand" id="ai-hand"></div>
+          <div class="deadwood-info" id="ai-dw-info" style="min-height:1.2em"></div>
+        </div>
+
+        <!-- Opponent table melds -->
+        <div class="table-melds-zone" id="ai-melds-zone">
+          <div class="melds-label" id="opp-melds-label">AI MELDS</div>
+          <div class="melds-row" id="ai-melds"></div>
+        </div>
+
+        <!-- Centre: deck + discard -->
+        <div class="gin-center">
+          <div class="pile-wrap">
+            <div class="pile-label">DECK</div>
+            <div class="pile-card pile-deck" id="pile-deck">🂠</div>
+            <div class="deck-count" id="deck-count">— cards</div>
+          </div>
+          <div class="gin-msg" id="gin-msg">Press NEW GAME to start!</div>
+          <div class="pile-wrap">
+            <div class="pile-label">DISCARD</div>
+            <div class="pile-card pile-discard-top" id="pile-discard">—</div>
+          </div>
+        </div>
+
+        <!-- Player table melds -->
+        <div class="table-melds-zone" id="player-melds-zone">
+          <div class="melds-label">MY MELDS</div>
+          <div class="melds-row" id="player-melds"></div>
+        </div>
+
+        <!-- Player hand -->
+        <div class="gin-hand-wrap">
+          <div class="cards-hand" id="player-hand"></div>
+          <div class="deadwood-info">DEADWOOD: <span id="player-dw">—</span></div>
+          <div class="hand-title">YOUR HAND</div>
+        </div>
+
+      </div><!-- /.gin-table -->
+
+      <!-- Action buttons -->
+      <div class="gin-actions">
+        <button class="gin-btn gbtn-deck"    id="btn-deck"    disabled>DRAW DECK</button>
+        <button class="gin-btn gbtn-discard" id="btn-disc"    disabled>TAKE DISCARD</button>
+        <button class="gin-btn gbtn-meld"    id="btn-meld"    disabled>PLACE MELD</button>
+        <button class="gin-btn gbtn-layoff"  id="btn-layoff"  disabled>LAY OFF ⇄</button>
+        <button class="gin-btn gbtn-throw"   id="btn-throw"   disabled>DISCARD SEL.</button>
+        <button class="gin-btn gbtn-knock"   id="btn-knock"   disabled>KNOCK (≤10)</button>
+        <button class="gin-btn gbtn-gin"     id="btn-gin-out" disabled>GIN OUT! (0)</button>
+      </div>
+
+      <button class="gin-new-btn" id="btn-new">NEW GAME</button>
+
+    </div><!-- /#gin-game -->
+  </main>
+
+  <script src="js/ginRummyLogic.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const G = window.GinRummyLogic;
+    const SAVE_KEY = 'ag_gin_v3';
+
+    /* ══════════════════════════════════════════
+       SETTINGS (from pre-menu)
+    ══════════════════════════════════════════ */
+    let cfg = { jokers: false, noPoints: false, vsAI: true };
+
+    /* ══════════════════════════════════════════
+       PERSISTENT SCORES
+    ══════════════════════════════════════════ */
+    let scoreYou = 0, scoreAI = 0, roundsYou = 0, roundsAI = 0, roundNum = 1;
+    try {
+      const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+      if (s.scoreYou !== undefined) { scoreYou = s.scoreYou; scoreAI = s.scoreAI; roundsYou = s.roundsYou || 0; roundsAI = s.roundsAI || 0; roundNum = s.roundNum || 1; }
+    } catch (e) {}
+    function persist() {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify({ scoreYou, scoreAI, roundsYou, roundsAI, roundNum })); } catch (e) {}
+    }
+
+    /* ══════════════════════════════════════════
+       ROUND STATE
+    ══════════════════════════════════════════ */
+    let deck = [], playerHand = [], aiHand = [], discardPile = [];
+    let playerTableMelds = [];   // [[card,...], ...]
+    let aiTableMelds = [];
+    let phase = 'idle';          // idle | draw | discard | ai | pass | over
+    let hasDrawn = false;
+    // UI selection state
+    let selectedSet = new Set(); // indices in playerHand
+    let targetMeld = null;       // { owner:'ai'|'player', idx:n } for lay-off
+
+    /* ══════════════════════════════════════════
+       DOM REFS
+    ══════════════════════════════════════════ */
+    const premenuEl    = document.getElementById('gin-premenu');
+    const gameEl       = document.getElementById('gin-game');
+    const passOverlay  = document.getElementById('pass-overlay');
+    const passName     = document.getElementById('pass-name');
+    const passReveal   = document.getElementById('pass-reveal');
+    const scoreYouEl   = document.getElementById('score-you');
+    const scoreAIEl    = document.getElementById('score-ai');
+    const scoreYouLbl  = document.getElementById('score-you-label');
+    const scoreAILbl   = document.getElementById('score-ai-label');
+    const scoreMidLbl  = document.getElementById('score-mid-label');
+    const hdrRound     = document.getElementById('hdr-round');
+    const ginMsg       = document.getElementById('gin-msg');
+    const playerEl     = document.getElementById('player-hand');
+    const aiEl         = document.getElementById('ai-hand');
+    const aiCount      = document.getElementById('ai-count');
+    const aiDwInfo     = document.getElementById('ai-dw-info');
+    const playerDw     = document.getElementById('player-dw');
+    const pileDecKEl   = document.getElementById('pile-deck');
+    const pileDiscEl   = document.getElementById('pile-discard');
+    const deckCountEl  = document.getElementById('deck-count');
+    const playerMeldsEl= document.getElementById('player-melds');
+    const aiMeldsEl    = document.getElementById('ai-melds');
+    const aiMeldsZone  = document.getElementById('ai-melds-zone');
+    const oppHandTitle = document.getElementById('opp-hand-title');
+    const oppMeldsLbl  = document.getElementById('opp-melds-label');
+    const btnDeck      = document.getElementById('btn-deck');
+    const btnDisc      = document.getElementById('btn-disc');
+    const btnMeld      = document.getElementById('btn-meld');
+    const btnLayoff    = document.getElementById('btn-layoff');
+    const btnThrow     = document.getElementById('btn-throw');
+    const btnKnock     = document.getElementById('btn-knock');
+    const btnGin       = document.getElementById('btn-gin-out');
+    const btnNew       = document.getElementById('btn-new');
+
+    /* ══════════════════════════════════════════
+       PRE-MENU LOGIC
+    ══════════════════════════════════════════ */
+    document.getElementById('toggle-jokers').addEventListener('click', function() {
+      cfg.jokers = !cfg.jokers;
+      this.classList.toggle('active', cfg.jokers);
+      this.setAttribute('aria-pressed', cfg.jokers);
+    });
+    document.getElementById('toggle-nopoints').addEventListener('click', function() {
+      cfg.noPoints = !cfg.noPoints;
+      this.classList.toggle('active', cfg.noPoints);
+      this.setAttribute('aria-pressed', cfg.noPoints);
+    });
+    document.getElementById('opp-ai').addEventListener('click', function() {
+      cfg.vsAI = true;
+      this.classList.add('active');
+      document.getElementById('opp-player').classList.remove('active');
+    });
+    document.getElementById('opp-player').addEventListener('click', function() {
+      cfg.vsAI = false;
+      this.classList.add('active');
+      document.getElementById('opp-ai').classList.remove('active');
+    });
+
+    document.getElementById('btn-start-match').addEventListener('click', () => {
+      // Reset scores for new match config
+      scoreYou = 0; scoreAI = 0; roundsYou = 0; roundsAI = 0; roundNum = 1;
+      persist();
+      // Update labels for vs-player mode
+      updateLabels();
+      // Close premenu
+      premenuEl.classList.add('closing');
+      setTimeout(() => { premenuEl.style.display = 'none'; }, 500);
+      gameEl.style.display = 'flex';
+      startRound();
+    });
+
+    function updateLabels() {
+      if (!cfg.vsAI) {
+        scoreYouLbl.innerHTML = 'P1: <strong id="score-you">0</strong>';
+        scoreAILbl.innerHTML  = 'P2: <strong id="score-ai">0</strong>';
+        oppHandTitle.innerHTML = 'PLAYER 2 HAND (<span id="ai-count">10</span>)';
+        oppMeldsLbl.textContent = 'P2 MELDS';
+      }
+      if (cfg.noPoints) {
+        scoreMidLbl.textContent = 'First to 10 rounds';
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       MELD VALIDITY HELPERS
+    ══════════════════════════════════════════ */
+    function isValidMeld(cards) {
+      if (cards.length < 3) return false;
+      const jokers = cards.filter(c => c.isJoker);
+      const reals  = cards.filter(c => !c.isJoker);
+      if (reals.length < 2) return false;
+
+      // Set: all same rank
+      if (reals.every(c => c.rank === reals[0].rank) && cards.length <= 4) return true;
+
+      // Run: all same suit, consecutive with jokers filling gaps
+      if (reals.every(c => c.suit === reals[0].suit)) {
+        const ranks = reals.map(c => G.rankIndex(c.rank)).sort((a, b) => a - b);
+        const unique = [...new Set(ranks)];
+        if (unique.length !== reals.length) return false; // duplicate rank
+        const span = unique[unique.length - 1] - unique[0];
+        const gaps = span - (reals.length - 1);
+        if (gaps >= 0 && gaps <= jokers.length && span <= 12) return true;
+      }
+      return false;
+    }
+
+    function canLayOff(card, meld) {
+      if (!card || meld.length < 3) return false;
+      if (card.isJoker) return true;
+      const nonJokers = meld.filter(c => !c.isJoker);
+      if (!nonJokers.length) return false;
+
+      const allSameRank = nonJokers.every(c => c.rank === nonJokers[0].rank);
+      if (allSameRank) return card.rank === nonJokers[0].rank && meld.length < 4;
+
+      const allSameSuit = nonJokers.every(c => c.suit === nonJokers[0].suit);
+      if (allSameSuit) {
+        if (card.suit !== nonJokers[0].suit) return false;
+        const realRanks = meld.filter(c => !c.isJoker).map(c => G.rankIndex(c.rank));
+        const min = Math.min(...realRanks), max = Math.max(...realRanks);
+        const cr = G.rankIndex(card.rank);
+        return (cr === min - 1 && min > 0) || (cr === max + 1 && max < 12);
+      }
+      return false;
+    }
+
+    function getHighestDeadwoodCard(hand, tableMelds) {
+      // Get melded card IDs from table melds
+      const meldedIds = new Set(tableMelds.flat().map(c => c.id));
+      // Also from G.calcDeadwood
+      const { meldedIds: hmIds } = G.calcDeadwood(hand);
+      const allMeldedIds = new Set([...meldedIds, ...hmIds]);
+      const unmelded = hand.filter(c => !allMeldedIds.has(c.id));
+      if (!unmelded.length) return hand[hand.length - 1];
+      return unmelded.sort((a, b) => G.cardValue(b) - G.cardValue(a))[0];
+    }
+
+    function calcDeadwoodWithMelds(hand, tableMelds) {
+      const meldedFromTable = new Set(tableMelds.flat().map(c => c.id));
+      const remaining = hand.filter(c => !meldedFromTable.has(c.id));
+      return G.calcDeadwood(remaining).deadwood;
+    }
+
+    /* ══════════════════════════════════════════
+       DECK BUILDING
+    ══════════════════════════════════════════ */
+    function buildDeck() {
+      let d = G.createDeck();
+      if (cfg.jokers) {
+        d.push({ rank: '★', suit: 'W', id: 'J1', isJoker: true });
+        d.push({ rank: '★', suit: 'W', id: 'J2', isJoker: true });
+        // Shuffle jokers in
+        for (let i = d.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [d[i], d[j]] = [d[j], d[i]];
+        }
+      }
+      return d;
+    }
+
+    /* ══════════════════════════════════════════
+       RENDER FUNCTIONS
+    ══════════════════════════════════════════ */
+    function renderPlayerHand() {
+      playerEl.innerHTML = '';
+      playerHand.forEach((c, i) => {
+        const el = document.createElement('div');
+        el.className = 'gin-card' + (c.isJoker ? ' joker' : ' up' + (G.isRed(c) ? ' red' : '')) +
+                       (selectedSet.has(i) ? ' selected' : '');
+        el.textContent = c.isJoker ? '★' : c.rank + c.suit;
+        el.style.animationDelay = (i * 0.04) + 's';
+        el.addEventListener('click', () => onCardClick(i));
+        playerEl.appendChild(el);
+      });
+      const dw = playerHand.length ? calcDeadwoodWithMelds(playerHand, playerTableMelds) : '—';
+      playerDw.textContent = dw;
+    }
+
+    function renderAIHand(reveal = false) {
+      aiEl.innerHTML = '';
+      const hand = reveal ? aiHand : null;
+      (reveal ? aiHand : Array(aiHand.length).fill(null)).forEach((c, i) => {
+        const el = document.createElement('div');
+        if (reveal && c) {
+          el.className = 'gin-card' + (c.isJoker ? ' joker' : ' up' + (G.isRed(c) ? ' red' : ''));
+          el.textContent = c.isJoker ? '★' : c.rank + c.suit;
+        } else {
+          el.className = 'gin-card down';
+          el.textContent = '🂠';
+        }
+        el.style.animationDelay = (i * 0.03) + 's';
+        aiEl.appendChild(el);
+      });
+      // Update count ref (re-query since innerHTML might have reset)
+      const countEl = document.getElementById('ai-count');
+      if (countEl) countEl.textContent = aiHand.length;
+
+      if (reveal) {
+        const dw = calcDeadwoodWithMelds(aiHand, aiTableMelds);
+        aiDwInfo.textContent = (cfg.vsAI ? 'AI' : 'P2') + ' DEADWOOD: ' + dw;
+      } else {
+        aiDwInfo.textContent = '';
+      }
+    }
+
+    function renderTableMelds() {
+      // Player melds
+      playerMeldsEl.innerHTML = '';
+      playerTableMelds.forEach((meld, mi) => {
+        const g = document.createElement('div');
+        g.className = 'meld-group';
+        meld.forEach(c => {
+          const el = document.createElement('div');
+          el.className = 'gin-card' + (c.isJoker ? ' joker' : ' up' + (G.isRed(c) ? ' red' : ''));
+          el.style.width = 'clamp(28px,4.5vw,42px)'; el.style.height = 'clamp(42px,6.5vw,62px)'; el.style.fontSize = 'clamp(.52rem,.85vw,.75rem)';
+          el.textContent = c.isJoker ? '★' : c.rank + c.suit;
+          g.appendChild(el);
+        });
+        playerMeldsEl.appendChild(g);
+      });
+
+      // AI melds
+      aiMeldsEl.innerHTML = '';
+      aiTableMelds.forEach((meld, mi) => {
+        const g = document.createElement('div');
+        g.className = 'meld-group ai-meld' + (targetMeld && targetMeld.owner === 'ai' && targetMeld.idx === mi ? ' targeted' : '');
+        // Click to target for lay-off
+        g.addEventListener('click', () => {
+          if (phase !== 'discard') return;
+          targetMeld = (targetMeld && targetMeld.owner === 'ai' && targetMeld.idx === mi) ? null : { owner: 'ai', idx: mi };
+          renderTableMelds();
+          updateButtons();
+        });
+        meld.forEach(c => {
+          const el = document.createElement('div');
+          el.className = 'gin-card' + (c.isJoker ? ' joker' : ' up' + (G.isRed(c) ? ' red' : ''));
+          el.style.width = 'clamp(28px,4.5vw,42px)'; el.style.height = 'clamp(42px,6.5vw,62px)'; el.style.fontSize = 'clamp(.52rem,.85vw,.75rem)';
+          el.textContent = c.isJoker ? '★' : c.rank + c.suit;
+          g.appendChild(el);
+        });
+        aiMeldsEl.appendChild(g);
+      });
+
+      // Show AI melds zone only if AI has any
+      aiMeldsZone.style.display = aiTableMelds.length ? 'flex' : 'none';
+    }
+
+    function renderDiscard() {
+      if (discardPile.length === 0) {
+        pileDiscEl.textContent = '—';
+        pileDiscEl.style.color = '#888';
+        pileDiscEl.className = 'pile-card pile-discard-top';
+      } else {
+        const top = discardPile[discardPile.length - 1];
+        pileDiscEl.textContent = top.isJoker ? '★' : top.rank + top.suit;
+        pileDiscEl.style.color = top.isJoker ? 'var(--cyan)' : (G.isRed(top) ? '#cc1111' : '#111');
+        pileDiscEl.className = 'pile-card pile-discard-top' + (!top.isJoker && G.isRed(top) ? ' red' : '');
+      }
+      deckCountEl.textContent = deck.length + ' cards';
+    }
+
+    function setMsg(msg, color) {
+      ginMsg.textContent = msg;
+      ginMsg.style.color = color || 'var(--dim)';
+    }
+
+    function updateScorebar() {
+      const syEl = document.getElementById('score-you');
+      const saEl = document.getElementById('score-ai');
+      if (syEl) syEl.textContent = cfg.noPoints ? roundsYou : scoreYou;
+      if (saEl) saEl.textContent = cfg.noPoints ? roundsAI  : scoreAI;
+      hdrRound.textContent = 'ROUND ' + roundNum;
+    }
+
+    /* ══════════════════════════════════════════
+       BUTTON STATE
+    ══════════════════════════════════════════ */
+    function updateButtons() {
+      const isDraw    = phase === 'draw';
+      const isDiscard = phase === 'discard';
+
+      const dw = playerHand.length ? calcDeadwoodWithMelds(playerHand, playerTableMelds) : 999;
+      const selArr = [...selectedSet];
+
+      // Check if selection forms a valid meld
+      const meldCards = selArr.map(i => playerHand[i]);
+      const selIsMeld = isDiscard && meldCards.length >= 3 && isValidMeld(meldCards);
+
+      // Check if 1 card selected can lay off on targeted AI meld
+      let layoffValid = false;
+      if (isDiscard && targetMeld && targetMeld.owner === 'ai' && selArr.length === 1) {
+        const card = playerHand[selArr[0]];
+        const meld = aiTableMelds[targetMeld.idx];
+        layoffValid = meld && canLayOff(card, meld);
+      }
+
+      btnDeck.disabled   = !isDraw;
+      btnDisc.disabled   = !isDraw || discardPile.length === 0;
+      btnMeld.disabled   = !selIsMeld;
+      btnLayoff.disabled = !layoffValid;
+      btnThrow.disabled  = !isDiscard || selArr.length !== 1;
+      btnKnock.disabled  = !isDiscard || !hasDrawn || dw > 10;
+      btnGin.disabled    = !isDiscard || !hasDrawn || dw !== 0;
+    }
+
+    /* ══════════════════════════════════════════
+       CARD SELECTION
+    ══════════════════════════════════════════ */
+    function onCardClick(i) {
+      if (phase !== 'discard') return;
+      if (selectedSet.has(i)) {
+        selectedSet.delete(i);
+      } else {
+        selectedSet.add(i);
+      }
+      renderPlayerHand();
+      updateButtons();
+    }
+
+    /* ══════════════════════════════════════════
+       START ROUND
+    ══════════════════════════════════════════ */
+    btnNew.addEventListener('click', startRound);
+
+    function startRound() {
+      deck = buildDeck();
+      playerHand = []; aiHand = []; discardPile = [];
+      playerTableMelds = []; aiTableMelds = [];
+      selectedSet = new Set(); targetMeld = null;
+      hasDrawn = false;
+      aiDwInfo.textContent = '';
+      aiMeldsZone.style.display = 'none';
+
+      for (let i = 0; i < 10; i++) { playerHand.push(deck.pop()); aiHand.push(deck.pop()); }
+      discardPile.push(deck.pop());
+
+      phase = 'draw';
+      setMsg('Draw a card to start your turn.', 'var(--white)');
+      renderPlayerHand();
+      renderAIHand(false);
+      renderTableMelds();
+      renderDiscard();
+      updateButtons();
+      updateScorebar();
+    }
+
+    /* ══════════════════════════════════════════
+       DRAW ACTIONS
+    ══════════════════════════════════════════ */
+    btnDeck.addEventListener('click', () => {
+      if (phase !== 'draw' || deck.length === 0) return;
+      playerHand.push(deck.pop());
+      hasDrawn = true; phase = 'discard'; selectedSet = new Set(); targetMeld = null;
+      setMsg('Select cards to meld, lay off, or discard one card.', 'var(--white)');
+      renderPlayerHand(); renderDiscard(); updateButtons();
+    });
+
+    btnDisc.addEventListener('click', () => {
+      if (phase !== 'draw' || discardPile.length === 0) return;
+      playerHand.push(discardPile.pop());
+      hasDrawn = true; phase = 'discard'; selectedSet = new Set(); targetMeld = null;
+      setMsg('Select cards to meld, lay off, or discard one card.', 'var(--white)');
+      renderPlayerHand(); renderDiscard(); updateButtons();
+    });
+
+    pileDecKEl.addEventListener('click', () => { if (phase === 'draw') btnDeck.click(); });
+    pileDiscEl.addEventListener('click', () => { if (phase === 'draw') btnDisc.click(); });
+
+    /* ══════════════════════════════════════════
+       PLACE MELD
+    ══════════════════════════════════════════ */
+    btnMeld.addEventListener('click', () => {
+      const selArr = [...selectedSet];
+      const meldCards = selArr.map(i => playerHand[i]);
+      if (!isValidMeld(meldCards)) return;
+
+      // Remove from hand (high index first to not shift)
+      selArr.sort((a, b) => b - a).forEach(i => playerHand.splice(i, 1));
+      playerTableMelds.push(meldCards);
+      selectedSet = new Set(); targetMeld = null;
+
+      // Check gin after placing meld (all cards melded)
+      if (playerHand.length === 0) {
+        phase = 'over';
+        resolveRound(true, 'player');
+        return;
+      }
+
+      setMsg('Meld placed! Discard a card or meld again.', '#88ff88');
+      renderPlayerHand(); renderTableMelds(); updateButtons();
+    });
+
+    /* ══════════════════════════════════════════
+       LAY OFF — EQUIVALENT EXCHANGE
+       Player lays card onto AI's meld → AI must discard their highest deadwood card
+    ══════════════════════════════════════════ */
+    btnLayoff.addEventListener('click', () => {
+      if (!targetMeld || targetMeld.owner !== 'ai') return;
+      const selArr = [...selectedSet];
+      if (selArr.length !== 1) return;
+      const cardIdx = selArr[0];
+      const card = playerHand[cardIdx];
+      const meld = aiTableMelds[targetMeld.idx];
+      if (!canLayOff(card, meld)) return;
+
+      // Move player's card onto AI's meld
+      playerHand.splice(cardIdx, 1);
+      meld.push(card);
+      selectedSet = new Set(); targetMeld = null;
+
+      // EQUIVALENT EXCHANGE: AI must discard their highest deadwood card
+      const forfeited = getHighestDeadwoodCard(aiHand, aiTableMelds);
+      const fidx = aiHand.findIndex(c => c.id === forfeited.id);
+      if (fidx !== -1) {
+        discardPile.push(aiHand.splice(fidx, 1)[0]);
+      }
+
+      const fname = forfeited.isJoker ? '★' : forfeited.rank + forfeited.suit;
+      setMsg(`Lay off! Equivalent Exchange — AI discards ${fname}.`, 'var(--gold)');
+
+      // This acts as the discard → pass turn to AI/P2
+      endPlayerTurn();
+    });
+
+    /* ══════════════════════════════════════════
+       DISCARD SELECTED
+    ══════════════════════════════════════════ */
+    btnThrow.addEventListener('click', () => {
+      const selArr = [...selectedSet];
+      if (phase !== 'discard' || selArr.length !== 1) return;
+      discardPile.push(playerHand.splice(selArr[0], 1)[0]);
+      selectedSet = new Set(); targetMeld = null;
+      endPlayerTurn();
+    });
+
+    /* ══════════════════════════════════════════
+       KNOCK / GIN
+    ══════════════════════════════════════════ */
+    btnKnock.addEventListener('click', () => {
+      const dw = calcDeadwoodWithMelds(playerHand, playerTableMelds);
+      if (dw > 10) { setMsg('Deadwood too high! Need ≤ 10.', '#ff4444'); return; }
+      phase = 'over';
+      resolveRound(false, 'player');
+    });
+
+    btnGin.addEventListener('click', () => {
+      const dw = calcDeadwoodWithMelds(playerHand, playerTableMelds);
+      if (dw !== 0) { setMsg('Need 0 deadwood for Gin!', '#ff4444'); return; }
+      phase = 'over';
+      resolveRound(true, 'player');
+    });
+
+    /* ══════════════════════════════════════════
+       END PLAYER TURN
+    ══════════════════════════════════════════ */
+    function endPlayerTurn() {
+      renderPlayerHand(); renderAIHand(false); renderTableMelds(); renderDiscard(); updateButtons();
+
+      if (!cfg.vsAI) {
+        // Pass-and-play: show pass overlay for P2
+        phase = 'pass';
+        passName.textContent = 'PLAYER 2';
+        passOverlay.classList.remove('hidden');
+        hasDrawn = false;
+        return;
+      }
+
+      // VS AI: start AI turn
+      hasDrawn = false;
+      phase = 'ai';
+      setMsg((cfg.vsAI ? 'AI' : 'P2') + ' is thinking…', 'var(--dim)');
+      updateButtons();
+      setTimeout(aiTurn, 1100);
+    }
+
+    /* ══════════════════════════════════════════
+       PASS-AND-PLAY REVEAL
+    ══════════════════════════════════════════ */
+    passReveal.addEventListener('click', () => {
+      passOverlay.classList.add('hidden');
+
+      // After reveal, it's P2's turn — but they play on the same "player" side
+      // We swap hands
+      [playerHand, aiHand] = [aiHand, playerHand];
+      [playerTableMelds, aiTableMelds] = [aiTableMelds, playerTableMelds];
+      selectedSet = new Set(); targetMeld = null; hasDrawn = false;
+
+      // Flip score labels
+      const tmpLbl = scoreYouLbl.innerHTML;
+      scoreYouLbl.innerHTML = scoreAILbl.innerHTML;
+      scoreAILbl.innerHTML = tmpLbl;
+
+      phase = 'draw';
+      setMsg('Draw a card to start your turn.', 'var(--white)');
+      renderPlayerHand(); renderAIHand(false); renderTableMelds(); renderDiscard(); updateButtons();
+    });
+
+    /* ══════════════════════════════════════════
+       AI TURN
+    ══════════════════════════════════════════ */
+    function aiTurn() {
+      if (deck.length === 0) { setMsg('Deck empty — round draw!', '#ff8844'); phase = 'idle'; return; }
+
+      // 1. Draw
+      const top = discardPile[discardPile.length - 1];
+      if (top && G.aiWantsDiscard(aiHand, top)) {
+        aiHand.push(discardPile.pop());
+      } else {
+        aiHand.push(deck.pop());
+      }
+
+      // 2. Try to place melds (AI places ALL valid melds it has)
+      aiPlaceMelds();
+
+      // 3. Try to lay off on player's table melds (equivalent exchange)
+      aiLayOff();
+
+      // 4. Check gin / knock
+      const dw = calcDeadwoodWithMelds(aiHand, aiTableMelds);
+      if (dw === 0) {
+        renderAIHand(true);
+        renderTableMelds();
+        setMsg((cfg.vsAI ? 'AI' : 'P2') + ' calls GIN! 😱', '#ff4444');
+        phase = 'over';
+        setTimeout(() => resolveRound(true, 'ai'), 900);
+        return;
+      }
+      if (dw <= 6 && Math.random() < 0.5) {
+        renderAIHand(true);
+        renderTableMelds();
+        setMsg((cfg.vsAI ? 'AI' : 'P2') + ' knocks! Deadwood: ' + dw, '#ff8844');
+        phase = 'over';
+        setTimeout(() => resolveRound(false, 'ai'), 900);
+        return;
+      }
+
+      // 5. Discard worst card
+      const discard = G.aiChooseDiscard(aiHand);
+      const idx = aiHand.findIndex(c => c.id === discard.id);
+      if (idx !== -1) discardPile.push(aiHand.splice(idx, 1)[0]);
+
+      renderAIHand(false); renderTableMelds(); renderDiscard();
+
+      // If pass-and-play, show pass overlay for P1
+      if (!cfg.vsAI) {
+        phase = 'pass';
+        passName.textContent = 'PLAYER 1';
+        passOverlay.classList.remove('hidden');
+        return;
+      }
+
+      phase = 'draw'; hasDrawn = false;
+      setMsg('Your turn — draw a card.', 'var(--white)');
+      updateButtons();
+    }
+
+    function aiPlaceMelds() {
+      // Find valid melds in AI's hand and place them
+      let placed = true;
+      while (placed) {
+        placed = false;
+        const allMelds = G.findAllMelds(aiHand);
+        if (!allMelds.length) break;
+        // Pick the longest meld
+        const best = allMelds.sort((a, b) => b.length - a.length)[0];
+        if (best && best.length >= 3) {
+          const meldIds = new Set(best.map(c => c.id));
+          aiHand = aiHand.filter(c => !meldIds.has(c.id));
+          aiTableMelds.push(best);
+          placed = true;
+        }
+      }
+    }
+
+    function aiLayOff() {
+      // AI tries to lay off on player table melds (equivalent exchange)
+      if (!playerTableMelds.length) return;
+      for (let mi = 0; mi < playerTableMelds.length; mi++) {
+        const meld = playerTableMelds[mi];
+        for (let ci = 0; ci < aiHand.length; ci++) {
+          const card = aiHand[ci];
+          if (canLayOff(card, meld)) {
+            // AI places card on player's meld
+            aiHand.splice(ci, 1);
+            meld.push(card);
+            // EQUIVALENT EXCHANGE: player discards their highest deadwood card
+            const forfeited = getHighestDeadwoodCard(playerHand, playerTableMelds);
+            const fidx = playerHand.findIndex(c => c.id === forfeited.id);
+            if (fidx !== -1) {
+              discardPile.push(playerHand.splice(fidx, 1)[0]);
+              const fname = forfeited.isJoker ? '★' : forfeited.rank + forfeited.suit;
+              setMsg(`AI lay off! Equivalent Exchange — you discard ${fname}!`, '#ff8844');
+              renderPlayerHand();
+              renderDiscard();
+            }
+            return; // Only one lay-off per turn
+          }
+        }
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       RESOLVE ROUND
+    ══════════════════════════════════════════ */
+    function resolveRound(isGin, knocker) {
+      phase = 'over';
+      renderAIHand(true);
+      updateButtons();
+
+      const pDW = calcDeadwoodWithMelds(playerHand, playerTableMelds);
+      const aDW = calcDeadwoodWithMelds(aiHand, aiTableMelds);
+      aiDwInfo.textContent = (cfg.vsAI ? 'AI' : 'P2') + ' DEADWOOD: ' + aDW;
+
+      let pts = 0, msg = '', color = 'var(--white)';
+      let youWon = false, aiWon = false;
+
+      if (knocker === 'player') {
+        if (isGin) {
+          pts = aDW + 25; youWon = true;
+          msg = `GIN! You score ${pts} pts (${aDW} + 25 bonus)! 🏆`; color = 'var(--gold)';
+        } else if (pDW < aDW) {
+          pts = aDW - pDW; youWon = true;
+          msg = `You knocked! Score ${pts} pts (${aDW}−${pDW}).`; color = 'var(--gold)';
+        } else if (aDW < pDW) {
+          pts = (pDW - aDW) + 10; aiWon = true;
+          msg = `Undercut! ${cfg.vsAI ? 'AI' : 'P2'} scores ${pts} pts.`; color = '#ff4444';
+        } else {
+          msg = 'Tie — no points!'; color = 'var(--cyan)';
+        }
+      } else { // ai knocked
+        if (isGin) {
+          pts = pDW + 25; aiWon = true;
+          msg = `${cfg.vsAI ? 'AI' : 'P2'} Gins! Scores ${pts} pts.`; color = '#ff4444';
+        } else if (aDW < pDW) {
+          pts = pDW - aDW; aiWon = true;
+          msg = `${cfg.vsAI ? 'AI' : 'P2'} knocks! Scores ${pts} pts.`; color = '#ff4444';
+        } else if (pDW < aDW) {
+          pts = (aDW - pDW) + 10; youWon = true;
+          msg = `You undercut! Score ${pts} pts.`; color = 'var(--gold)';
+        } else {
+          msg = 'Tie — no points!'; color = 'var(--cyan)';
+        }
+      }
+
+      if (cfg.noPoints) {
+        if (youWon) roundsYou++;
+        if (aiWon)  roundsAI++;
+      } else {
+        if (youWon) scoreYou += pts;
+        if (aiWon)  scoreAI  += pts;
+      }
+
+      persist();
+      updateScorebar();
+      setMsg(msg, color);
+
+      const target = cfg.noPoints ? 10 : 100;
+      const pScore = cfg.noPoints ? roundsYou : scoreYou;
+      const aScore = cfg.noPoints ? roundsAI  : scoreAI;
+
+      setTimeout(() => {
+        if (pScore >= target) {
+          setMsg(`🏆 YOU WIN THE MATCH! ${pScore} — ${cfg.vsAI ? 'AI' : 'P2'} ${aScore}`, 'var(--gold)');
+          scoreYou = 0; scoreAI = 0; roundsYou = 0; roundsAI = 0; roundNum = 1; persist();
+        } else if (aScore >= target) {
+          setMsg(`${cfg.vsAI ? 'AI' : 'P2'} WINS THE MATCH. You ${pScore} — ${cfg.vsAI ? 'AI' : 'P2'} ${aScore}`, '#ff4444');
+          scoreYou = 0; scoreAI = 0; roundsYou = 0; roundsAI = 0; roundNum = 1; persist();
+        } else {
+          roundNum++; persist(); startRound();
+        }
+      }, 2800);
+    }
+
+    /* ══════════════════════════════════════════
+       INIT
+    ══════════════════════════════════════════ */
+    updateScorebar();
+  }());
+  </script>
+</body>
+</html>

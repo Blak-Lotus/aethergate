@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aether Clicker — AetherGate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="game-page clicker-page">
+
+  <header class="game-header">
+    <a href="index.html?arcade" class="back-link">← BACK TO ARCADE</a>
+    <span class="game-header-title" style="color:var(--cyan)">⚡ AETHER CLICKER</span>
+    <span class="header-right" id="hdr-prestige">PRESTIGE ×0</span>
+  </header>
+
+  <main class="game-main">
+    <div class="clicker-layout">
+
+      <!-- Stats panel -->
+      <div class="clicker-panel">
+        <div class="panel-title">STATS</div>
+        <div class="stat-row"><span class="stat-label">Energy</span>       <span class="stat-val" id="s-energy">0</span></div>
+        <div class="stat-row"><span class="stat-label">Total Clicks</span> <span class="stat-val" id="s-clicks">0</span></div>
+        <div class="stat-row"><span class="stat-label">Per Click</span>    <span class="stat-val" id="s-per">1</span></div>
+        <div class="stat-row"><span class="stat-label">Auto / sec</span>   <span class="stat-val" id="s-auto">0</span></div>
+        <div class="stat-row"><span class="stat-label">Level</span>        <span class="stat-val" id="s-level">1</span></div>
+        <div class="stat-row"><span class="stat-label">Bosses Slain</span> <span class="stat-val" id="s-bosses">0</span></div>
+        <div class="stat-row"><span class="stat-label">Prestige</span>     <span class="stat-val" id="s-prestige" style="color:var(--magenta)">×0</span></div>
+      </div>
+
+      <!-- Centre: orb + xp -->
+      <div class="clicker-center">
+        <div id="main-orb" role="button" tabindex="0" aria-label="Click to generate energy">⚡</div>
+        <div class="click-label">TAP TO GENERATE ENERGY</div>
+
+        <div class="xp-wrap">
+          <div class="xp-meta">
+            <span>LVL <span id="bar-lv">1</span></span>
+            <span><span id="bar-xp">0</span> / <span id="bar-xpm">100</span> XP</span>
+          </div>
+          <div class="xp-track"><div id="xp-bar" style="width:0%"></div></div>
+        </div>
+
+        <div id="boss-zone" style="display:none;" class="clicker-panel" style="width:100%">
+          <div class="boss-title">⚠ BOSS INCOMING</div>
+          <div class="boss-hp-val" id="boss-hp-val">HP: —</div>
+          <div class="boss-hp-track"><div id="boss-hp-bar" style="width:100%"></div></div>
+        </div>
+      </div>
+
+      <!-- Upgrades panel -->
+      <div class="clicker-panel">
+        <div class="panel-title">UPGRADES</div>
+        <div id="upgrade-list"></div>
+        <button class="prestige-btn" id="prestige-btn" disabled>✦ PRESTIGE (need Lv 10)</button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Load logic (UMD — exports window.ClickerLogic) -->
+  <script src="js/clickerLogic.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    const L   = window.ClickerLogic;
+    const KEY = 'ag_clicker_v2';
+
+    /* ── State ─────────────────────────────────── */
+    let player = L.createNewPlayer();
+    try {
+      const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (saved) player = Object.assign(L.createNewPlayer(), saved);
+    } catch (e) {}
+
+    function save() {
+      try { localStorage.setItem(KEY, JSON.stringify(player)); } catch (e) {}
+    }
+
+    /* ── DOM refs ──────────────────────────────── */
+    const sEnergy   = document.getElementById('s-energy');
+    const sClicks   = document.getElementById('s-clicks');
+    const sPer      = document.getElementById('s-per');
+    const sAuto     = document.getElementById('s-auto');
+    const sLevel    = document.getElementById('s-level');
+    const sBosses   = document.getElementById('s-bosses');
+    const sPrestige = document.getElementById('s-prestige');
+    const hdrP      = document.getElementById('hdr-prestige');
+    const barLv     = document.getElementById('bar-lv');
+    const barXp     = document.getElementById('bar-xp');
+    const barXpm    = document.getElementById('bar-xpm');
+    const xpBar     = document.getElementById('xp-bar');
+    const bossZone  = document.getElementById('boss-zone');
+    const bossHpVal = document.getElementById('boss-hp-val');
+    const bossHpBar = document.getElementById('boss-hp-bar');
+    const pBtn      = document.getElementById('prestige-btn');
+    const orb       = document.getElementById('main-orb');
+    const upgList   = document.getElementById('upgrade-list');
+
+    /* ── Build upgrade cards once ──────────────── */
+    L.UPGRADES.forEach(upg => {
+      const card = document.createElement('div');
+      card.className = 'upgrade-card';
+      card.id = 'upg-' + upg.id;
+      card.innerHTML = `
+        <div class="upg-icon">${upg.type === 'multiplier' ? '✦' : '🔄'}</div>
+        <div class="upg-info">
+          <div class="upg-name">${upg.name.toUpperCase()}</div>
+          <div class="upg-desc">${upg.desc}</div>
+        </div>
+        <div class="upg-cost" id="upg-cost-${upg.id}">${L.fmt(upg.cost)} ⚡</div>
+      `;
+      card.addEventListener('click', () => {
+        const res = L.purchaseUpgrade(player, upg.id);
+        if (res.success) {
+          floatText('✦ ' + res.upgrade.name + ' UNLOCKED', 'var(--gold)', window.innerWidth / 2, window.innerHeight / 2);
+          render(); save();
+        }
+      });
+      upgList.appendChild(card);
+    });
+
+    /* ── Render ────────────────────────────────── */
+    function render() {
+      sEnergy.textContent   = L.fmt(player.energy);
+      sClicks.textContent   = L.fmt(player.totalClicks);
+      sPer.textContent      = L.fmt(player.perClick);
+      sAuto.textContent     = L.fmt(player.autoRate);
+      sLevel.textContent    = player.level;
+      sBosses.textContent   = player.bossesDefeated;
+      sPrestige.textContent = '×' + player.prestige;
+      hdrP.textContent      = 'PRESTIGE ×' + player.prestige;
+
+      barLv.textContent   = player.level;
+      barXp.textContent   = L.fmt(player.xp);
+      barXpm.textContent  = L.fmt(player.xpMax);
+      xpBar.style.width   = Math.min(100, (player.xp / player.xpMax) * 100) + '%';
+
+      pBtn.disabled = player.level < 10;
+
+      // Boss zone
+      bossZone.style.display = player.bossActive && player.boss ? 'block' : 'none';
+      if (player.bossActive && player.boss) {
+        bossHpVal.textContent = 'HP: ' + L.fmt(player.boss.hp);
+        bossHpBar.style.width = Math.max(0, (player.boss.hp / player.boss.maxHp) * 100) + '%';
+      }
+
+      // Upgrades
+      L.UPGRADES.forEach(upg => {
+        const card = document.getElementById('upg-' + upg.id);
+        const cost = document.getElementById('upg-cost-' + upg.id);
+        if (!card) return;
+        if (player.upgrades[upg.id]) {
+          card.classList.add('bought');
+          cost.textContent = '✓ OWNED';
+        } else if (player.energy < upg.cost) {
+          card.classList.add('locked');
+          card.classList.remove('bought');
+        } else {
+          card.classList.remove('locked', 'bought');
+        }
+      });
+    }
+
+    /* ── Click orb ─────────────────────────────── */
+    function doClick(cx, cy) {
+      const res = L.applyClick(player);
+
+      floatText('+' + L.fmt(res.gained) + ' ⚡', 'var(--cyan)', cx || window.innerWidth / 2, cy || 200);
+      if (res.levelled) floatText('LEVEL UP! ⭐', 'var(--gold)', window.innerWidth / 2, window.innerHeight / 2 - 40);
+      if (res.newBoss)  floatText('⚠ BOSS: ' + res.newBoss.name + '!', '#ff4444', window.innerWidth / 2, window.innerHeight / 2);
+      if (res.bossKilled) floatText('BOSS SLAIN! 💥', 'var(--gold)', window.innerWidth / 2, window.innerHeight / 2);
+
+      // Orb pulse ring
+      const ring = document.createElement('div');
+      ring.className = 'orb-ring';
+      orb.appendChild(ring);
+      setTimeout(() => ring.remove(), 620);
+
+      render();
+      save();
+    }
+
+    orb.addEventListener('click', (e) => {
+      const r = orb.getBoundingClientRect();
+      doClick(r.left + r.width / 2, r.top - 20);
+    });
+    orb.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); doClick(); }
+    });
+
+    /* ── Auto tick ──────────────────────────────── */
+    setInterval(() => {
+      if (player.autoRate > 0) {
+        L.applyAutoTick(player);
+        render();
+        save();
+      }
+    }, 1000);
+
+    /* ── Prestige ───────────────────────────────── */
+    pBtn.addEventListener('click', () => {
+      if (!confirm('Prestige? Progress resets but you gain a permanent +50% bonus forever!')) return;
+      const res = L.prestige(player);
+      if (res.success) {
+        player = res.player;
+        floatText('✦ PRESTIGE ×' + player.prestige + '!', 'var(--magenta)', window.innerWidth / 2, window.innerHeight / 2);
+        render();
+        save();
+      }
+    });
+
+    /* ── Floating text ──────────────────────────── */
+    function floatText(text, color, x, y) {
+      const el = document.createElement('div');
+      el.className  = 'float-txt';
+      el.textContent = text;
+      el.style.color = color || 'var(--cyan)';
+      el.style.left  = (x || 200) + 'px';
+      el.style.top   = (y || 200) + 'px';
+      el.style.textShadow = `0 0 12px ${color}`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 920);
+    }
+
+    /* ── Init ────────────────────────────────────── */
+    render();
+  }());
+  </script>
+</body>
+</html>

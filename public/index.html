@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>AetherGate — The Infinite Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════
+       INTRO SCREEN
+       Layer order inside: canvas(z1) → scanlines(z2) → .intro-center(z10) → corners(z10)
+  ═══════════════════════════════════════ -->
+  <div id="intro-screen">
+    <canvas id="stars-canvas"></canvas>
+    <div class="scanlines"></div>
+
+    <div class="intro-center">
+      <div class="logo-glyph" aria-hidden="true">
+        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="60,4 112,34 112,86 60,116 8,86 8,34"  stroke="var(--cyan)"    stroke-width="2.5" fill="none"/>
+          <polygon points="60,18 98,40 98,80 60,102 22,80 22,40" stroke="var(--magenta)" stroke-width="1.5" fill="none" opacity="0.6"/>
+          <polygon points="60,32 84,46 84,74 60,88 36,74 36,46"  stroke="var(--gold)"    stroke-width="1"   fill="rgba(255,200,64,0.05)"/>
+          <circle cx="60" cy="60" r="8" fill="var(--cyan)" opacity="0.9"/>
+          <line x1="60" y1="4"  x2="60"  y2="32"  stroke="var(--cyan)" stroke-width="1.5" opacity="0.5"/>
+          <line x1="60" y1="88" x2="60"  y2="116" stroke="var(--cyan)" stroke-width="1.5" opacity="0.5"/>
+          <line x1="8"  y1="34" x2="22"  y2="40"  stroke="var(--cyan)" stroke-width="1.5" opacity="0.5"/>
+          <line x1="98" y1="40" x2="112" y2="34"  stroke="var(--cyan)" stroke-width="1.5" opacity="0.5"/>
+          <line x1="8"  y1="86" x2="22"  y2="80"  stroke="var(--cyan)" stroke-width="1.5" opacity="0.5"/>
+          <line x1="98" y1="80" x2="112" y2="86"  stroke="var(--cyan)" stroke-width="1.5" opacity="0.5"/>
+        </svg>
+      </div>
+      <h1 class="intro-title">AETHERGATE</h1>
+      <p class="intro-tagline">THE INFINITE ARCADE</p>
+      <div id="press-any-key">
+        <span class="pak-text">PRESS ANY KEY</span><span class="pak-cursor">_</span>
+      </div>
+    </div>
+
+    <div class="intro-corner top-left">⬡ AG</div>
+    <div class="intro-corner top-right">v1.0.0</div>
+    <div class="intro-corner bottom-left">SYSTEM READY</div>
+    <div class="intro-corner bottom-right">3 GAMES LOADED</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       CAROUSEL SCREEN
+  ═══════════════════════════════════════ -->
+  <div id="carousel-screen" class="hidden">
+
+    <div class="hud-top">
+      <div class="hud-logo">⬡ AETHERGATE</div>
+      <div class="key-hint">← → &nbsp;|&nbsp; A D &nbsp;|&nbsp; swipe</div>
+      <div class="hud-counter"><span id="hud-current">1</span>&thinsp;/&thinsp;3</div>
+    </div>
+
+    <!-- Slides -->
+    <div class="carousel-wrapper">
+
+      <!-- ═══ SLIDE 0 : AETHER CLICKER ═══ -->
+      <section class="slide slide-clicker active" data-index="0" aria-label="Aether Clicker">
+
+        <!-- LEFT: text content -->
+        <div class="slide-body">
+          <span class="slide-badge">GAME 01</span>
+          <h2 class="slide-title">AETHER<br>CLICKER</h2>
+          <p class="slide-desc">
+            Harness raw cosmic energy with every tap. Build power, unlock upgrades,
+            defeat bosses and prestige through dimensions.
+          </p>
+          <div class="rules-block">
+            <h3 class="rules-head">HOW TO PLAY</h3>
+            <ol class="rules-list">
+              <li>Click the Aether Orb to generate energy</li>
+              <li>Spend energy on multiplier &amp; auto upgrades</li>
+              <li>Defeat bosses every 3 levels to earn XP</li>
+              <li>Prestige at Level 10 for a permanent bonus</li>
+            </ol>
+          </div>
+          <a href="clicker.html" class="play-btn play-clicker">PLAY NOW &nbsp;→</a>
+        </div>
+
+        <!-- RIGHT: static game preview -->
+        <div class="slide-preview">
+          <div class="gp gp-clicker">
+            <div class="gp-hd">AETHER CLICKER</div>
+            <div class="gp-clicker-inner">
+              <div class="gp-mini-panel">
+                <div class="gp-ph">STATS</div>
+                <div class="gp-sr">Energy<span class="cv">2.4K</span></div>
+                <div class="gp-sr">Level<span>3</span></div>
+                <div class="gp-sr">Per Click<span class="cv">4</span></div>
+                <div class="gp-sr">Auto/s<span class="cv">1</span></div>
+                <div class="gp-sr">Bosses<span>1</span></div>
+              </div>
+              <div class="gp-orb-col">
+                <div class="gp-orb-btn">⚡</div>
+                <div class="gp-xp-wrap">
+                  <div class="gp-xp-fill" style="width:58%"></div>
+                </div>
+                <span class="gp-lv-lbl">LVL 3</span>
+                <span class="gp-tap-lbl">TAP TO GENERATE</span>
+              </div>
+              <div class="gp-mini-panel">
+                <div class="gp-ph">UPGRADES</div>
+                <div class="gp-upg-r owned">✦ FOCUS<em>✓</em></div>
+                <div class="gp-upg-r">🔄 AUTO<em class="cv">200⚡</em></div>
+                <div class="gp-upg-r locked">⚡ SURGE<em>500⚡</em></div>
+                <div class="gp-upg-r locked">🌀 VORTEX<em>1.2K⚡</em></div>
+                <button class="gp-pres-btn" disabled>✦ PRESTIGE (Lv10)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ═══ SLIDE 1 : GIN RUMMY ═══ -->
+      <section class="slide slide-gin" data-index="1" aria-label="Gin Rummy">
+
+        <div class="slide-body">
+          <span class="slide-badge">GAME 02</span>
+          <h2 class="slide-title">GIN<br>RUMMY</h2>
+          <p class="slide-desc">
+            Master melds and deadwood. Choose Jokers, No Points or pass-and-play.
+            Place melds, lay off on opponent melds via Equivalent Exchange.
+          </p>
+          <div class="rules-block">
+            <h3 class="rules-head">HOW TO PLAY</h3>
+            <ol class="rules-list">
+              <li>Each player is dealt 10 cards</li>
+              <li>Draw from deck or discard pile each turn</li>
+              <li>Form melds: 3+ same rank or 3+ consecutive same suit</li>
+              <li>Lay off on opponent melds — they must discard in exchange</li>
+              <li>Knock (≤10 deadwood) or Gin out (0) — first to 100 wins!</li>
+            </ol>
+          </div>
+          <a href="gin-rummy.html" class="play-btn play-gin">PLAY NOW &nbsp;→</a>
+        </div>
+
+        <div class="slide-preview">
+          <div class="gp gp-gin">
+            <div class="gp-hd">GIN RUMMY</div>
+            <div class="gp-gin-ai-row">
+              <span class="gp-zone-lbl">AI (10)</span>
+              <div class="gp-cards-row">
+                <div class="gp-mc bk">🂠</div><div class="gp-mc bk">🂠</div>
+                <div class="gp-mc bk">🂠</div><div class="gp-mc bk">🂠</div>
+                <div class="gp-mc bk">🂠</div>
+              </div>
+            </div>
+            <div class="gp-meld-strip">
+              <span class="gp-meld-tag">AI MELD</span>
+              <div class="gp-mc">7♠</div>
+              <div class="gp-mc r">7♥</div>
+              <div class="gp-mc r">7♦</div>
+            </div>
+            <div class="gp-gin-center-row">
+              <div class="gp-pile-w">
+                <div class="gp-mc bk">🂠</div>
+                <span>DECK</span>
+              </div>
+              <div class="gp-gin-msg">Your turn — draw</div>
+              <div class="gp-pile-w">
+                <div class="gp-mc r">3♥</div>
+                <span>DISCARD</span>
+              </div>
+            </div>
+            <div class="gp-meld-strip player-meld">
+              <span class="gp-meld-tag">MY MELD</span>
+              <div class="gp-mc">5♣</div>
+              <div class="gp-mc">6♣</div>
+              <div class="gp-mc">7♣</div>
+            </div>
+            <div class="gp-gin-player-row">
+              <div class="gp-cards-row">
+                <div class="gp-mc">A♠</div>
+                <div class="gp-mc r">K♥</div>
+                <div class="gp-mc r">Q♦</div>
+                <div class="gp-mc gp-sel">J♣</div>
+                <div class="gp-mc">10♠</div>
+              </div>
+              <span class="gp-zone-lbl">YOU — DW: 12</span>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ═══ SLIDE 2 : BLACKJACK ═══ -->
+      <section class="slide slide-bj" data-index="2" aria-label="Blackjack">
+
+        <div class="slide-body">
+          <span class="slide-badge">GAME 03</span>
+          <h2 class="slide-title">BLACK<br>JACK</h2>
+          <p class="slide-desc">
+            Beat the dealer without busting. Bet chips, double down
+            in this Vegas-style classic with real odds and card animations.
+          </p>
+          <div class="rules-block">
+            <h3 class="rules-head">HOW TO PLAY</h3>
+            <ol class="rules-list">
+              <li>Place your bet before the deal</li>
+              <li>You and dealer each get 2 cards — dealer one face-down</li>
+              <li>Hit to draw, Stand to hold your hand</li>
+              <li>Beat the dealer without exceeding 21</li>
+              <li>Blackjack (Ace + face) pays 3:2 — Double Down for extra risk!</li>
+            </ol>
+          </div>
+          <a href="blackjack.html" class="play-btn play-bj">PLAY NOW &nbsp;→</a>
+        </div>
+
+        <div class="slide-preview">
+          <div class="gp gp-bj">
+            <div class="gp-hd">BLACKJACK</div>
+            <div class="gp-felt">
+              <div class="gp-felt-lbl">BLACKJACK PAYS 3:2</div>
+              <div class="gp-bj-zone">
+                <span class="gp-zone-lbl">DEALER</span>
+                <div class="gp-cards-row">
+                  <div class="gp-mc bk">🂠</div>
+                  <div class="gp-mc r">A♥</div>
+                </div>
+              </div>
+              <div class="gp-chip-row">
+                <div class="gp-chip gpc100">100</div>
+                <div class="gp-chip gpc50">50</div>
+                <div class="gp-chip gpc25">25</div>
+              </div>
+              <div class="gp-bj-zone">
+                <div class="gp-cards-row">
+                  <div class="gp-mc">K♠</div>
+                  <div class="gp-mc r">J♥</div>
+                </div>
+                <span class="gp-zone-lbl">YOU — 20</span>
+              </div>
+            </div>
+            <div class="gp-bj-footer">
+              <span class="gp-bal">💰 $850</span>
+              <div class="gp-bj-btns">
+                <div class="gp-bj-btn">HIT</div>
+                <div class="gp-bj-btn act">STAND</div>
+                <div class="gp-bj-btn">×2</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </div><!-- /.carousel-wrapper -->
+
+    <!-- Arrows only — ndots removed -->
+    <nav class="carousel-nav" aria-label="Game navigation">
+      <button class="nav-arrow" id="nav-prev" aria-label="Previous game">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15,18 9,12 15,6"/></svg>
+      </button>
+      <div class="nav-dots"><!-- dots removed per request --></div>
+      <button class="nav-arrow" id="nav-next" aria-label="Next game">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
+      </button>
+    </nav>
+
+  </div><!-- /#carousel-screen -->
+
+  <script src="js/intro.js"></script>
+  <script src="js/carousel.js"></script>
+</body>
+</html>
