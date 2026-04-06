@@ -36,6 +36,6 @@ aethergate/
 └── sounds/                # (optional - add .mp3 files: door-creak.mp3, whoosh.mp3, etc.)
 </pre>
 
-##Gallery
-##Landing Page:
+### Gallery
+#### Landing Page:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7aeeb54f-da61-4c39-80b0-5a92c40ed131" />
